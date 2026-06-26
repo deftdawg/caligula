@@ -29,6 +29,7 @@ pub mod candidate;
 pub mod device;
 pub mod io_graph;
 pub mod legacy_io;
+pub mod notification;
 pub mod runtime;
 pub mod stdiomux;
 

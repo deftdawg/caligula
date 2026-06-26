@@ -162,6 +162,7 @@ pub fn run<'a>(params: Params<'a>) {
             .unwrap(),
         );
 
+    let mut notification_sent = false;
     loop {
         std::thread::sleep(REFRESH_PERIOD);
 
@@ -179,14 +180,25 @@ pub fn run<'a>(params: Params<'a>) {
                 verify_progress.set_position((ratio * (length as f64)) as u64)
             }
             WVState::Finished { result, .. } => {
-                match result {
-                    Err(error) => {
-                        println!("Error occurred while writing: {error}");
-                        println!("{}", params.log_paths.get_bug_report_msg());
+                if !notification_sent {
+                    match result {
+                        Err(error) => {
+                            crate::util::notification::send_terminal_notification(
+                                "Caligula Error",
+                                &error.to_string(),
+                            );
+                            println!("Error occurred while writing: {error}");
+                            println!("{}", params.log_paths.get_bug_report_msg());
+                        }
+                        Ok(()) => {
+                            crate::util::notification::send_terminal_notification(
+                                "Caligula",
+                                "Burn finished successfully!",
+                            );
+                            println!("Done!")
+                        }
                     }
-                    Ok(()) => {
-                        println!("Done!")
-                    }
+                    notification_sent = true;
                 }
                 break;
             }

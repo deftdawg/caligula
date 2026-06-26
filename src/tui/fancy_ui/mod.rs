@@ -91,8 +91,25 @@ fn draw_loop(
     child: Watch<WVState>,
     log_paths: &LogPaths,
 ) {
+    let mut notification_sent = false;
     for ev in events {
         let child = child.borrow();
+
+        if child.is_finished() && !notification_sent {
+            use crate::facade::workflow::WorkflowState as _;
+            match child.result() {
+                Some(Ok(_)) => crate::util::notification::send_terminal_notification(
+                    "Caligula",
+                    "Burn finished successfully!",
+                ),
+                Some(Err(e)) => crate::util::notification::send_terminal_notification(
+                    "Caligula Error",
+                    &e.to_string(),
+                ),
+                None => {}
+            }
+            notification_sent = true;
+        }
 
         let Some(new_state) = state.on_event(&child, ev) else {
             return;

@@ -102,6 +102,7 @@ fn handle_toplevel_error(ctx: &ErrorContext, err: anyhow::Error) {
         }
     }
 
+    crate::util::notification::send_terminal_notification("Caligula Error", &err.to_string());
     crash_and_burn(ctx, err);
 }
 
