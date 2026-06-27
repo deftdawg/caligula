@@ -60,6 +60,7 @@ where
         state,
         events_iter,
         params.child_state,
+        params.begin,
         params.log_paths,
     );
 }
@@ -89,10 +90,33 @@ fn draw_loop(
     mut state: State,
     events: impl IntoIterator<Item = UIEvent>,
     child: Watch<WVState>,
+    begin: &WriteVerifyWorkflow,
     log_paths: &LogPaths,
 ) {
+    let mut notification_sent = false;
     for ev in events {
         let child = child.borrow();
+
+        if child.is_finished() && !notification_sent {
+            use crate::facade::workflow::WorkflowState as _;
+            let image_name = begin.input_file.file_name()
+                .map(|n| n.to_string_lossy())
+                .unwrap_or_else(|| begin.input_file.to_string_lossy());
+            let device_path = begin.target.devnode.to_string_lossy();
+
+            match child.result() {
+                Some(Ok(_)) => crate::util::notification::send_terminal_notification(
+                    "Caligula",
+                    &format!("Burn of {} to {} finished successfully!", image_name, device_path),
+                ),
+                Some(Err(e)) => crate::util::notification::send_terminal_notification(
+                    "Caligula Error",
+                    &format!("Error burning {} to {}: {}", image_name, device_path, e),
+                ),
+                None => {}
+            }
+            notification_sent = true;
+        }
 
         let Some(new_state) = state.on_event(&child, ev) else {
             return;

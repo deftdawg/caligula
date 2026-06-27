@@ -66,6 +66,7 @@ pub fn main(
         );
     } else {
         simple_ui::run(simple_ui::Params {
+            begin: &start_write_verify,
             child_state,
             log_paths: &log_paths,
         });

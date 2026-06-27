@@ -61,6 +61,7 @@ pub fn do_setup_wizard(
 }
 
 pub struct Params<'a> {
+    pub begin: &'a WriteVerifyWorkflow,
     pub child_state: Watch<WVState>,
     pub log_paths: &'a LogPaths,
 }
@@ -179,12 +180,25 @@ pub fn run<'a>(params: Params<'a>) {
                 verify_progress.set_position((ratio * (length as f64)) as u64)
             }
             WVState::Finished { result, .. } => {
+                let image_name = params.begin.input_file.file_name()
+                    .map(|n| n.to_string_lossy())
+                    .unwrap_or_else(|| params.begin.input_file.to_string_lossy());
+                let device_path = params.begin.target.devnode.to_string_lossy();
+
                 match result {
                     Err(error) => {
+                        crate::util::notification::send_terminal_notification(
+                            "Caligula Error",
+                            &format!("Error burning {} to {}: {}", image_name, device_path, error),
+                        );
                         println!("Error occurred while writing: {error}");
                         println!("{}", params.log_paths.get_bug_report_msg());
                     }
                     Ok(()) => {
+                        crate::util::notification::send_terminal_notification(
+                            "Caligula",
+                            &format!("Burn of {} to {} finished successfully!", image_name, device_path),
+                        );
                         println!("Done!")
                     }
                 }
